@@ -1,9 +1,8 @@
 # StocksPredictions
-This repo stores my python project that is a stock market forecast
 
 # Stocks Predictor
 
-Stocks Predictor is a Python application that uses historical stock price data to predict future prices using linear regression. It downloads historical data from Yahoo Finance, trains a linear regression model, and provides predictions for a specified number of days.
+Stocks Predictor is a Python application that uses historical stock price data to predict future prices using linear regression. It downloads historical data from Yahoo Finance, trains a linear regression model, and provides predictions for a specified number of days. This repo stores my python project that is a stock market forecast looking at the stock for apple currently which can be changed based on any other stock that is desired.
 
 ## Features
 
