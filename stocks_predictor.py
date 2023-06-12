@@ -1,50 +1,77 @@
 import pandas as pd
 import yfinance as yf
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
 
 # Download historical data
-symbol = 'AAPL'  # Replace with the desired stock symbol
+symbol = 'SNAP'  
 start_date = '2016-01-01'
 end_date = '2023-06-01'
 
 data = yf.download(symbol, start_date, end_date)
 
-# Prepare the data for prediction
-data = data[['Close']]
+# Define how many days ahead you want to predict
 forecast_out = 30
+
+# Prepare the data for prediction
 data['Prediction'] = data['Close'].shift(-forecast_out)
+data = data[['Open', 'High', 'Low', 'Close', 'Volume', 'Prediction']]
+
+# TODO: add technical indicators here
 
 # Create the independent and dependent data sets
 X = data.drop('Prediction', axis=1).iloc[:-forecast_out]
 y = data['Prediction'].iloc[:-forecast_out]
 
-# Split the data into training and testing sets
-test_size = 0.2
-random_state = 42
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+# Normalize the data
+scaler = MinMaxScaler()
+X = scaler.fit_transform(X)
 
-# Create and train the Linear Regression Model
-lr = LinearRegression()
-lr.fit(X_train, y_train)
+# Create the Random Forest Regressor
+rf = RandomForestRegressor()
 
-# Test the model using R-squared score
-lr_confidence = lr.score(X_test, y_test)
-print("Linear Regression Confidence (R-squared):", lr_confidence)
+# Define hyperparameters grid for GridSearch
+# Define hyperparameters grid for GridSearch
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_features': [1.0, 'sqrt', 'log2'],
+    'max_depth' : [4,5,6,7,8]
+}
+
+# Apply GridSearchCV for hyperparameter tuning
+CV_rf = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5)
+CV_rf.fit(X, y)
+
+print("Best Parameters: ", CV_rf.best_params_)
 
 # Predict the future values
-x_forecast = data.drop('Prediction', axis=1).iloc[-forecast_out:]
-forecast = lr.predict(x_forecast)
+x_forecast = scaler.transform(data.drop('Prediction', axis=1).iloc[-forecast_out:])
+forecast = CV_rf.predict(x_forecast)
 print("Forecast for the next {} days:".format(forecast_out))
 print(forecast)
+
+# Print out performance metrics
+y_pred = CV_rf.predict(X)
+print('Mean Squared Error:', mean_squared_error(y, y_pred))
+print('Root Mean Squared Error:', np.sqrt(mean_squared_error(y, y_pred)))
+print('Mean Absolute Error:', mean_absolute_error(y, y_pred))
+
+
+
+
+
+
 
 # Get predictions for specific days
 prediction_days = {
     'Yesterday': forecast[0],
     'Today': forecast[1],
     'Tomorrow': forecast[2],
-    'Next 3 Days': forecast[3:6],
-    'Next 4 Days': forecast[3:7]
+    'Next 3 Days': forecast[2:4],
+    'Next 4 Days': forecast[2:5]
 }
 
 # Print the predictions
